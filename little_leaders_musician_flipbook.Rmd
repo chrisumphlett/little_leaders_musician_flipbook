@@ -1,0 +1,490 @@
+---
+title: "Little leaders: Great women of music flipbook"
+subtitle: "A Women's History Month project"
+author: "Chris and Kyria Umphlett"
+date: "`r Sys.Date()`"
+output:
+  xaringan::moon_reader:
+    css: ["default", "LL.css"]
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+--- 
+
+class: other_slide
+
+```{r setup, echo = FALSE, message = FALSE}
+options(htmltools.dir.version = FALSE,
+scipen=999)
+library(lastfmr)
+library(tidyverse)
+library(ggimage)
+library(ggrepel)
+library(scales)
+
+# hide api key in .rprofile per JD Long at https://community.rstudio.com/t/keeping-api-keys-private-in-blogdown/20386/2
+invisible(Sys.getenv("lastfm_key"))
+
+#Sys.setenv(lastfm_key = "910cbbd03009f0c3e983e533e62e625a")
+
+artists <- c("Sister Rosetta Tharpe", "Ella Fitzgerald", "Marian Anderson", "Josephine Baker", "Mahalia Jackson",
+"Nichelle Nichols", "Nina Simone", "Violeta Parra", "Calypso Rose", "Miriam Makeba", "Buffy Sainte-Marie")
+```
+
+``` {r functions, echo = FALSE}
+stats <- function(x.artist) {
+  info<-artist_getInfo(artist = x.artist) %>% 
+    mutate(listeners = as.numeric(stats.listeners),
+           plays = as.numeric(stats.playcount))
+
+  similar<-info %>%
+    select(name, similar) %>%
+    unnest() %>%
+    rename(similar_artist=name1, artist = name) %>%
+    select(artist, similar_artist) %>%
+    pull(similar_artist)
+  
+  similar2 <- paste0(similar, collapse=", ")
+  
+  cat("\n")
+  cat("\n")
+  cat("Last.FM stats")
+  cat("\n")
+  cat("\n")
+  cat(paste0("Total Listeners: ", formatC(info$listeners, format = "d", big.mark=",")))
+  cat("\n")
+  cat("\n")
+  cat(paste0("Total Plays: ", formatC(info$plays, format = "d", big.mark=",")))
+  cat("\n")
+  cat("\n")
+  cat(paste0("Similar Artists: ", similar2))
+  
+  return(info)
+}      
+
+cleantext <- function(bio){
+  # https://stackoverflow.com/questions/29575768/r-markdown-format-text-in-code-chunk-with-new-lines
+  #text<-strsplit(text,"\n")[[1]][1]
+  #gsub(pattern = "[\n.]*", replacement = "", x = text)
+  cat(gsub(pattern = "–", replacement = " - ", x = bio))
+  #cat(gsub(pattern = "<a href", replacement = "<a href", x = text))
+}
+
+showbio <- function() {
+  bio<-info$bio.summary
+  cleantext(bio)
+}
+
+chart <- function (x.artist) {
+  top5<-artist_getTopTracks(artist = x.artist, limit = 5) %>% 
+  mutate(listens = as.numeric(playcount),
+         listeners = as.numeric(listeners),
+         plays_per_listener = listens / listeners) %>%
+  arrange(-listens) %>%
+  mutate(listen_rank = as.factor(row_number()),
+         xlab = paste0(listen_rank, "-", name))
+
+# faceted plot showing the popularity of each artists' 5 top songs across same scale
+ggplot(top5, aes(x = xlab, y = listens, fill = listen_rank)) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values = c("#f8766d", "#f4a004", "#00bf7d", "#00b0f6", "#c80fe0")) +
+  scale_y_continuous(labels = comma) +
+  theme(panel.grid = element_blank(), axis.ticks = element_blank(), axis.line = element_blank(), plot.caption = element_text(hjust = 0, size = 8, color = "#5c5d5e"), axis.title = element_blank(), legend.position = "none") +
+  ggtitle("Number of last.fm listens, top 5 songs")
+}
+
+```
+
+### Project description
+
+An #rstats exploration of last.fm data on the 11 musical artists feature in the books *Little Leaders: Bold Women in Black History* and *Little Dreamers: Visionary Women Around the World*, both by Vashti Harrison. These are amongst my 7 year-old daughter's favorite books; she enjoys learning about these women as well as looking at the beautiful illustrations.
+
+Her favorite illustration was that of Sister Rosetta Tharpe, a gospel singer who helped laid the foundations for rock and roll in the 1930s and 1940s. This led us to systematically learn about all of the musicians. Together we went through the books and found all musicians, obtained data from last.fm and listened to some of their music. We created a Spotify playlist with the most popular song of each artist that you can listen to: https://open.spotify.com/playlist/5G774SxFRCAMYgXcGHOLPb
+
+Each song is embedded in a spotify player on each artist's slide as well. In addition you can read the short version of the artist's biography and learn about their songs' popularity with last.fm users and see similar artists.
+
+Kyria picked the colors of the bars on the charts, font and slide background colors, and helped design the layout of the artist slides.
+
+
+---
+
+class: other_slide
+
+### Technical stuff
+  
+  This project was also an excuse for me to learn the R package `xaringan`. The flipbook is made with `xaringan` within R Studio using an R Markdown document. [Much more information on that available here](https://bookdown.org/yihui/rmarkdown/xaringan.html).
+
+I have a [GitHub repo]() where you can see the full code used to create the flipbook.
+
+I was inspired by this [ggplot flipbook made by Gina Reynolds](https://evamaerey.github.io/ggplot_flipbook/ggplot_flipbook_xaringan.html#1). This is a great introduction to creating graphics in R with the `ggplot` package.
+                                                               
+Some other packages I wanted to work were utilized: `lastfmr` to utilize the Last.Fm API and `ggimage` to create the scatterplot with pictures as the dot type.
+
+---
+
+class: other_slide
+
+### The books
+
+These books came out of a Black History Month project by the author and illustrator, Vashti Harrison. [Check out more on her web site.](https://www.vashtiharrison.com/little-leaders)
+
+``` {r pics, echo = FALSE}
+knitr::include_graphics("https://static.wixstatic.com/media/a36188_3d839cae9de54de6919ad7ffa94eab31~mv2_d_2175_2700_s_2.jpg/v1/crop/x_37,y_0,w_2102,h_2700/fill/w_374,h_485,al_c,q_80,usm_0.66_1.00_0.01/a36188_3d839cae9de54de6919ad7ffa94eab31~mv2_d_2175_2700_s_2.webp")
+
+
+knitr::include_graphics("https://static.wixstatic.com/media/a36188_046178c6b4394e2da7b0aa548fc14083~mv2.png/v1/fill/w_374,h_421,al_c,q_80,usm_0.66_1.00_0.01/a36188_046178c6b4394e2da7b0aa548fc14083~mv2.webp")
+```
+
+
+---
+
+class: other_slide
+
+### Artists Overview 
+
+The artists range in popularity from very popular to virtually unknown. The chart below shows the sum of listens of each artist's 100 most listened-to songs and their picture. 
+
+``` {r top100, echo = FALSE, cache = TRUE, fig.height = 6, fig.width = 10}
+top100songs<-function(singer) {
+  artist_getTopTracks(artist = singer, limit = 100)
+}
+
+top100<-map_df(artists, ~ top100songs(.x)) %>% 
+  mutate(listens = as.numeric(playcount)) %>%
+  group_by(artist.name, image.small) %>%
+  summarise(total_plays = sum(listens)) %>%
+  ungroup() %>%
+  arrange(total_plays) %>%
+  mutate(plays_rank = row_number())
+
+ggplot(top100, aes(y = total_plays, x = plays_rank)) + 
+  geom_image(aes(image = image.small), size = 0.1) +
+  scale_y_log10(labels = comma) +
+  geom_label_repel(aes(label = artist.name), size = 3, nudge_y=.3) +
+  theme_classic()
+```
+
+
+---
+
+class: artist_slide
+
+### Sister Rosetta Tharpe
+<iframe src="https://open.spotify.com/embed/track/3O3Zzre0FPv6GNTeInm6Md" width="800" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+  
+.left-column[
+  .small[
+      
+``` {r tharpe_stats, echo = FALSE, results = 'asis', warning = FALSE, message = FALSE, cache = TRUE}
+
+info <- stats("Sister Rosetta Tharpe")
+
+```
+  ]
+]
+
+
+.right-column[
+  .small[
+    
+```{r tharpe_bio, echo = FALSE, results='asis', warning = FALSE, message = FALSE}
+showbio()
+```
+    ]
+  ]
+
+``` {r tharpe_chart, echo = FALSE, results='asis', warning = FALSE, message = FALSE, fig.width = 10, fig.height = 3, cache = TRUE}
+
+chart("Sister Rosetta Tharpe")
+
+```
+
+
+---
+
+class: artist_slide
+
+### Ella Fitzgerald
+<iframe src="https://open.spotify.com/embed/track/78MI7mu1LV1k4IA2HzKmHe" width="800" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+
+
+.left-column[
+.small[
+
+``` {r ella_stats, echo = FALSE, results = 'asis', warning = FALSE, message = FALSE, cache = TRUE}
+
+info <- stats("Ella Fitzgerald")
+
+```
+]]
+
+
+.right-column[
+.small[
+```{r ella_bio, echo = FALSE, results='asis', warning = FALSE, message = FALSE}
+showbio()
+```
+]]
+
+``` {r ella_chart, echo = FALSE, results='asis', warning = FALSE, message = FALSE, fig.width = 10, fig.height = 3, cache = TRUE}
+chart("Ella Fitzgerald")
+```
+
+---
+
+class: artist_slide
+
+### Marian Anderson
+<iframe src="https://open.spotify.com/embed/track/4GjGERtbwIar3ys4KqeA6g" width="800" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+
+
+.left-column[
+.small[
+
+``` {r anderson_stats, echo = FALSE, results = 'asis', warning = FALSE, message = FALSE, cache = TRUE}
+
+info<-stats("Marian Anderson")
+
+```
+]]
+
+
+.right-column[
+.small[
+```{r anderson_bio, echo = FALSE, results='asis', warning = FALSE, message = FALSE}
+showbio()
+```
+]]
+
+``` {r anderson_chart, echo = FALSE, results='asis', warning = FALSE, message = FALSE, fig.width = 10, fig.height = 3, cache = TRUE}
+chart("Marian Anderson")
+```
+
+---
+
+class: artist_slide
+
+### Josephine Baker
+<iframe src="https://open.spotify.com/embed/track/7stpeZplK3IUyiIFBE9UIU" width="800" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+
+
+.left-column[
+.small[
+
+``` {r baker_stats, echo = FALSE, results = 'asis', warning = FALSE, message = FALSE, cache = TRUE}
+
+info<-stats("Josephine Baker")
+```
+]]
+
+
+.right-column[
+.small[
+```{r baker_bio, echo = FALSE, results='asis', warning = FALSE, message = FALSE}
+showbio()
+```
+]]
+
+``` {r baker_chart, echo = FALSE, results='asis', warning = FALSE, message = FALSE, fig.width = 10, fig.height = 3, cache = TRUE}
+chart("Josephine Baker")
+```
+
+
+---
+
+class: artist_slide
+
+### Mahalia Jackson
+<iframe src="https://open.spotify.com/embed/track/4GjGERtbwIar3ys4KqeA6g" width="800" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+
+
+.left-column[
+.small[
+
+``` {r mahalia_stats, echo = FALSE, results = 'asis', warning = FALSE, message = FALSE, cache = TRUE}
+info<-stats("Mahalia Jackson")
+```
+]]
+
+
+.right-column[
+.small[
+```{r mahalia_bio, echo = FALSE, results='asis', warning = FALSE, message = FALSE}
+showbio()
+```
+]]
+
+``` {r mahalia_chart, echo = FALSE, results='asis', warning = FALSE, message = FALSE, fig.width = 10, fig.height = 3, cache = TRUE}
+chart("Mahalia Jackson")
+``` 
+
+---
+
+class: artist_slide
+
+### Nichelle Nichols
+<iframe src="https://open.spotify.com/embed/track/4Kz6JGnhwVtoV1IwbNWAt8" width="800" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+
+
+.left-column[
+.small[
+
+``` {r nichols_stats, echo = FALSE, results = 'asis', warning = FALSE, message = FALSE, cache = TRUE}
+info <- stats("Nichelle Nichols")
+```
+]]
+
+
+.right-column[
+.small[
+```{r nichols_bio, echo = FALSE, results='asis', warning = FALSE, message = FALSE}
+showbio()
+```
+]]
+
+``` {r nichols_chart, echo = FALSE, results='asis', warning = FALSE, message = FALSE, fig.width = 10, fig.height = 3, cache = TRUE}
+chart("Nichelle Nichols")
+``` 
+
+---
+
+class: artist_slide
+
+### Nina Simone
+<iframe src="https://open.spotify.com/embed/track/1VKsbTJ78G5bnfyoPz46LA" width="800" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+
+
+.left-column[
+.small[
+
+``` {r simone_stats, echo = FALSE, results = 'asis', warning = FALSE, message = FALSE, cache = TRUE}
+
+info<-stats("Nina Simone")
+```
+]]
+
+
+.right-column[
+.small[
+```{r simone_bio, echo = FALSE, results='asis', warning = FALSE, message = FALSE}
+showbio()
+```
+]]
+
+``` {r simone_chart, echo = FALSE, results='asis', warning = FALSE, message = FALSE, fig.width = 10, fig.height = 3, cache = TRUE}
+chart("Nina Simone")
+``` 
+
+---
+
+
+class: artist_slide
+
+### Violeta Parra
+<iframe src="https://open.spotify.com/embed/track/5U7MyRNbuZrWkyAI4bm3Ja" width="800" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+
+.left-column[
+.small[
+
+``` {r parra_stats, echo = FALSE, results = 'asis', warning = FALSE, message = FALSE, cache = TRUE}
+
+info<-stats("Violeta Parra")
+```
+]]
+
+
+.right-column[
+.small[
+```{r parra_bio, echo = FALSE, results='asis', warning = FALSE, message = FALSE}
+showbio()
+```
+]]
+
+``` {r parra_chart, echo = FALSE, results='asis', warning = FALSE, message = FALSE, fig.width = 10, fig.height = 3, cache = TRUE}
+chart("Violeta Parra")
+``` 
+
+
+---
+class: artist_slide
+
+### Calypso Rose
+<iframe src="https://open.spotify.com/embed/track/26Myj8FOTQdBMqfSUCwfzB" width="800" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+
+.left-column[
+.small[
+
+``` {r rose_stats, echo = FALSE, results = 'asis', warning = FALSE, message = FALSE, cache = TRUE}
+
+info<-stats("Calypso Rose")
+```
+]]
+
+
+.right-column[
+.small[
+```{r rose_bio, echo = FALSE, results='asis', warning = FALSE, message = FALSE}
+showbio()
+```
+]]
+
+``` {r rose_chart, echo = FALSE, results='asis', warning = FALSE, message = FALSE, fig.width = 10, fig.height = 3, cache = TRUE}
+chart("Calypso Rose")
+``` 
+
+
+---
+class: artist_slide
+
+### Miriam Makeba
+<iframe src="https://open.spotify.com/embed/track/6tR8N0wgzIoKaI7fmh0J0O" width="800" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+
+.left-column[
+.small[
+
+``` {r makeba_stats, echo = FALSE, results = 'asis', warning = FALSE, message = FALSE, cache = TRUE}
+
+info<-stats("Miriam Makeba")
+```
+]]
+
+
+.right-column[
+.small[
+```{r makeba_bio, echo = FALSE, results='asis', warning = FALSE, message = FALSE}
+showbio()
+```
+]]
+
+``` {r makeba_chart, echo = FALSE, results='asis', warning = FALSE, message = FALSE, fig.width = 10, fig.height = 3, cache = TRUE}
+chart("Miriam Makeba")
+``` 
+
+---
+class: artist_slide
+
+### Buffy Sainte-Marie
+<iframe src="https://open.spotify.com/embed/track/4MCI71gpCGwHsK2rv7c8pv" width="800" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+
+.left-column[
+.small[
+
+``` {r buffy_stats, echo = FALSE, results = 'asis', warning = FALSE, message = FALSE, cache = TRUE}
+
+info<-stats("Buffy Sainte-Marie")
+```
+]]
+
+
+.right-column[
+.small[
+```{r buffy_bio, echo = FALSE, results='asis', warning = FALSE, message = FALSE}
+showbio()
+```
+]]
+
+``` {r buffy_chart, echo = FALSE, results='asis', warning = FALSE, message = FALSE, fig.width = 10, fig.height = 3, cache = TRUE}
+chart("Buffy Sainte-Marie")
+``` 

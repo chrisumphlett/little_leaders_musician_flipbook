@@ -1,0 +1,15 @@
+base
+lastfmr
+tidyverse
+ggplot2
+tibble
+tidyr
+readr
+purrr
+dplyr
+stringr
+forcats
+ggimage
+ggrepel
+scales
+bindrcpp

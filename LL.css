@@ -1,0 +1,19 @@
+.small { font-size: 70% }
+
+.artist_slide {
+  background-color: #d2cfd3;
+  color: #760b93;
+}
+
+.other_slide {
+  background-color: #d2cfd3;
+}
+
+.left-column {
+  color: #000000;
+  width: 25%;
+}
+
+.title-slide h1, .title-slide h2, .title-slide h3{
+  color: #e5109e;
+}
